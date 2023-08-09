@@ -1,9 +1,9 @@
 import requests
 import json
 
-app_id = None
 invalid_token = "all_your_base_are_belong_to_us"
-base_address = "https://dummyapi.io/data/v1/"
+app_id = None
+base_address = None
 server_retry = 5
 
 
@@ -155,6 +155,15 @@ def set_creds(creds):
     app_id = creds
 
 
+def set_api(api):
+    """
+    Method to set the global base_address value to a specific API's address
+    :param api: address of an API
+    """
+    global base_address
+    base_address = api
+
+
 def connectivity_test(endpoint):
     """
     Method to test connectivity to some API
@@ -278,6 +287,7 @@ def get_posts():
 
 
 def main():
+    set_api("https://dummyapi.io/data/v1/")
     # set_creds('INSERT CREDENTIALS HERE')
     connectivity_test('user?limit=1')
     get_users()
