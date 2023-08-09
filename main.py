@@ -7,6 +7,25 @@ base_address = "https://dummyapi.io/"
 base_endpoint = "/data/v1/"
 
 
+class GetRequestError(Exception):
+    """
+    Exception raised for errors obtained by get request
+
+    Attributes:
+        err -- error string obtained by the GET method
+    """
+    def __init__(self, err):
+        self.err = err
+        super().__init__(f"Failed GET request because of {err}")
+
+
+def create_json(data, filename):
+    # export the obtained data to a JSON file
+    data_json = json.dumps(data)
+
+    with open(filename + ".json", "w") as file:
+        file.write(data_json)
+
 def set_creds(creds):
     global app_id
     app_id = creds
@@ -33,21 +52,31 @@ def get_item(item, args=None):
     endpoint = base_address + base_endpoint + item + '?' + '&'.join([arg for arg in formatted_args])
     response = requests.get(endpoint, headers={'app-id': app_id})
     response_json = response.json()
+
+    # Should raise an exception
     if 'error' in response_json:
-        return None
+        raise GetRequestError(response_json['error'])
+
     return response_json
 
 
 def get_items(item):
     data = []
     current_page = 0
-    while True:
-        args = {'page' : current_page}
-        response = get_item(item, args)
+    filename = item + 's'
 
-        # get_item failed to return value, there's an error communicating with the API
-        if not response:
-            return data
+    while True:
+        args = {'page': current_page}
+
+        # get_item fails with exception, dump collected data and re-raise
+        try:
+            response = get_item(item, args)
+        except GetRequestError as e:
+            msg = ""
+            if len(data) > 0:
+                create_json(data, item + 's')
+                msg = f"Dumped collected data onto {filename}.json\n"
+            raise GetRequestError(f"{msg}{e}")
 
         # obtained data is empty, meaning there's no more data to collect
 
@@ -59,11 +88,7 @@ def get_items(item):
         current_page += 1
 
     # export the obtained data to a JSON file
-    file_name = item + 's'
-    data_json = json.dumps(data)
-
-    with open(file_name + ".json", "w") as file:
-        file.write(data_json)
+    create_json(data, filename)
 
 
 def get_users():
