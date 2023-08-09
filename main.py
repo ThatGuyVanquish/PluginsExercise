@@ -60,7 +60,7 @@ def get_item(item, args=None):
     return response_json
 
 
-def get_items(item):
+def get_items(item, to_return=False, amount=None):
     data = []
     current_page = 0
     filename = item + 's'
@@ -85,20 +85,42 @@ def get_items(item):
 
         # append the obtained information and continue
         data.extend(response['data'])
+
+        # limit the size of obtained data to given amount argument
+        if amount:
+            if len(data) >= amount:
+                data = data[:amount]
+                break
         current_page += 1
 
     # export the obtained data to a JSON file
-    create_json(data, filename)
+    if not to_return:
+        create_json(data, filename)
+    else:
+        return data
 
 
 def get_users():
     get_items('user')
 
 
+def get_posts():
+    posts = get_items('post', to_return=True, amount=50)
+    for post in posts:
+        post_id = post['id']
+        endpoint = f'post/{post_id}/comment'
+        comments = get_items(endpoint, to_return=True)
+        post['comments'] = comments
+
+    print(posts)
+    create_json(posts, 'posts')
+
+
 def main():
 
     connectivity_test()
-    get_users()
+    # get_users()
+    get_posts()
 
 
 if __name__ == '__main__':
